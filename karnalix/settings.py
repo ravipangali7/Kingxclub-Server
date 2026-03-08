@@ -216,4 +216,4 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
 
 # Allow more GET/POST form fields (default 1000). Needed for admin changelist with many rows/filters.
-DATA_UPLOAD_MAX_NUMBER_FIELDS = 50000
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 50000 
