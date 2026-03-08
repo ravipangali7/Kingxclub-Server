@@ -214,3 +214,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # If you get 413 from the API, increase your reverse proxy limit too (e.g. nginx: client_max_body_size 10M;).
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# Allow more GET/POST form fields (default 1000). Needed for admin changelist with many rows/filters.
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
