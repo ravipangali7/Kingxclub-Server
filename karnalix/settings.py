@@ -133,8 +133,8 @@ WSGI_APPLICATION = 'karnalix.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'luckyuser365',
-        # 'NAME': 'kingxclub',
+        # 'NAME': 'luckyuser365',
+        'NAME': 'kingxclub',
         'USER': 'root',
         'PASSWORD': '7a5a70064acdfd90',
         'HOST': '127.0.0.1',
@@ -190,8 +190,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Game provider launch (fallback when GameProvider.api_secret / SuperSetting not set)
 GAME_PROVIDER_API_SECRET = ''
-SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'https://luckyuser365.com')
-# SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'https://kingxclub.com')
+# SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'https://luckyuser365.com')
+SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'https://kingxclub.com')
 
 # Google OAuth (Login with Google). Set GOOGLE_CLIENT_ID in env for id_token verification.
 GOOGLE_CLIENT_ID = '386184793784-njlhdvqjh0698tnc5tffi79m5pjqpig4.apps.googleusercontent.com'
