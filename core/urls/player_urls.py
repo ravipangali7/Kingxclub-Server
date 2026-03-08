@@ -1,0 +1,40 @@
+from django.urls import path
+from core.views.player import (
+    dashboard_views,
+    player_views,
+    deposit_withdraw_views,
+    bonus_request_views,
+    profile_views,
+    message_views,
+    transfer_views,
+)
+from core.views import launch_views
+
+urlpatterns = [
+    path('dashboard/', dashboard_views.dashboard),
+    path('wallet/', player_views.wallet),
+    path('transactions/', player_views.transaction_list),
+    path('game-log/', player_views.game_log_list),
+    path('game-log/<int:pk>/', player_views.game_log_detail),
+    path('referrals/', player_views.referral_list),
+    path('referrals/<int:pk>/', player_views.referral_detail),
+    path('deposit-bonus-eligibility/', player_views.deposit_bonus_eligibility),
+    path('deposit-payment-modes/', player_views.deposit_payment_modes),
+    path('payment-modes/', player_views.payment_mode_list_create),
+    path('payment-modes/<int:pk>/', player_views.payment_mode_detail),
+    path('deposit-request/', deposit_withdraw_views.deposit_request),
+    path('withdraw-request/', deposit_withdraw_views.withdraw_request),
+    path('bonus-request/', bonus_request_views.bonus_request_create),
+    path('profile/', profile_views.profile_get),
+    path('profile/update/', profile_views.profile_update),
+    path('change-password/', profile_views.change_password),
+    path('messages/', message_views.message_list),
+    path('messages/contacts/', message_views.message_contacts),
+    path('messages/notifications/', message_views.notification_list),
+    path('messages/unread-count/', message_views.message_unread_count),
+    path('messages/send/', message_views.message_create),
+    path('transfer/', transfer_views.transfer),
+    path('games/<int:game_id>/launch/', launch_views.launch_game_by_id),
+    path('launch-game/', launch_views.launch_game_redirect),
+    path('launch-url/', launch_views.launch_game_url),
+]
