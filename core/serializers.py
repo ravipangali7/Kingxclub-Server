@@ -664,9 +664,14 @@ class GameProviderSerializer(serializers.ModelSerializer):
 
 # --- GameCategory ---
 class GameCategorySerializer(serializers.ModelSerializer):
+    games_count = serializers.SerializerMethodField()
+
     class Meta:
         model = GameCategory
-        fields = '__all__'
+        fields = ['id', 'name', 'icon', 'svg', 'is_active', 'created_at', 'updated_at', 'games_count']
+
+    def get_games_count(self, obj):
+        return Game.objects.filter(category=obj, is_active=True, is_coming_soon=False).count()
 
 
 # --- Game ---
