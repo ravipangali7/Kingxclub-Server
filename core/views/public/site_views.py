@@ -155,7 +155,7 @@ def second_home_sections(request):
     site = SiteSetting.objects.first()
     if not site:
         return Response({
-            'providers': {'section_title': '', 'section_svg': '', 'items': []},
+            'providers': {'section_title': '', 'section_subtitle': '', 'section_svg': '', 'items': []},
             'top_games': {'section_title': '', 'section_svg': '', 'items': []},
             'categories_game': {'section_title': '', 'section_svg': '', 'categories': []},
             'popular_games': {'section_title': '', 'section_svg': '', 'items': []},
@@ -265,6 +265,7 @@ def second_home_sections(request):
     return Response({
         'providers': {
             'section_title': (providers_json.get('section_title') or '') or '',
+            'section_subtitle': (providers_json.get('section_subtitle') or '') or '',
             'section_svg': (providers_json.get('section_svg') or '') or '',
             'items': provider_cards,
         },
