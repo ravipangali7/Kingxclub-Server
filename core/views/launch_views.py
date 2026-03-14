@@ -20,6 +20,16 @@ def _normalize_launch_base(launch_base: str) -> str:
     return launch_base.rstrip("/")
 
 
+def _wallet_amount_for_launch(user, min_bet):
+    """When main is 0 and bonus >= min_bet, send only bonus; otherwise main + bonus."""
+    main = float(user.main_balance or 0)
+    bonus = float(user.bonus_balance or 0)
+    min_bet_f = float(min_bet) if min_bet is not None else 0
+    if main == 0 and bonus >= min_bet_f:
+        return bonus
+    return main + bonus
+
+
 def _launch_game_common(request):
     """Shared logic: validate player, get game_uid, call provider, return (location_url or None, error_response or None)."""
     err = require_role(request, [UserRole.PLAYER])
@@ -39,7 +49,9 @@ def _launch_game_common(request):
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
     user = request.user
-    wallet_amount = float((user.main_balance or 0) + (user.bonus_balance or 0))
+    game = Game.objects.filter(game_uid=game_uid).first()
+    min_bet = game.min_bet if game else 0
+    wallet_amount = _wallet_amount_for_launch(user, min_bet)
     launch_base = (getattr(settings, "game_api_launch_url", None) or "").strip() or settings.game_api_url
     launch_base = _normalize_launch_base(launch_base)
     user_id = str(user.pk)
@@ -166,7 +178,7 @@ def launch_game_by_id(request, game_id):
         callback_url = request.build_absolute_uri("/api/callback/").rstrip("/") or None
 
     user = request.user
-    wallet_amount = float((user.main_balance or 0) + (user.bonus_balance or 0))
+    wallet_amount = _wallet_amount_for_launch(user, game.min_bet)
     user_id = str(user.pk)
 
     try:
