@@ -1,4 +1,4 @@
-# Generated manually for PaymentMode default status change
+# Default new payment modes to approved
 
 from django.db import migrations, models
 

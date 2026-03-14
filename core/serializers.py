@@ -106,7 +106,7 @@ class UserListSerializer(serializers.ModelSerializer):
     total_balance = serializers.SerializerMethodField()
     total_win_loss = serializers.SerializerMethodField()
     total_bet = serializers.SerializerMethodField()
-    is_default = serializers.SerializerMethodField()
+    is_default_master = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -118,12 +118,8 @@ class UserListSerializer(serializers.ModelSerializer):
             'masters_balance', 'masters_pl_balance', 'users_balance',
             'players_count', 'masters_count',
             'total_balance', 'total_win_loss', 'total_bet',
-            'is_default',
+            'is_default_master',
         ]
-
-    def get_is_default(self, obj):
-        default_master_id = self.context.get('default_master_id')
-        return default_master_id is not None and obj.id == default_master_id
 
     def get_no_activity_7_days(self, obj):
         if obj.role != UserRole.PLAYER:
@@ -200,6 +196,13 @@ class UserListSerializer(serializers.ModelSerializer):
         if obj.role != UserRole.PLAYER:
             return None
         return getattr(obj, '_bet_sum', None)
+
+    def get_is_default_master(self, obj):
+        """True when this user is the default master in SuperSetting."""
+        if obj.role != UserRole.MASTER:
+            return False
+        settings = SuperSetting.get_settings()
+        return settings is not None and settings.default_master_id == obj.id
 
 
 class UserDetailSerializer(serializers.ModelSerializer):

@@ -1,4 +1,5 @@
 from django.urls import path
+from core.views.powerhouse import super_setting_views as powerhouse_super_setting_views
 from core.views.super import (
     dashboard_views,
     user_views,
@@ -24,7 +25,6 @@ urlpatterns = [
     path('masters/create/', user_views.master_create),
     path('masters/<int:pk>/edit/', user_views.master_update),
     path('masters/<int:pk>/delete/', user_views.master_delete),
-    path('masters/<int:pk>/set-default/', user_views.master_set_default),
     path('masters/<int:pk>/regenerate-pin/', user_views.master_regenerate_pin),
     path('masters/<int:pk>/reset-password/', user_views.master_reset_password),
     path('players/', user_views.player_list),
@@ -74,4 +74,5 @@ urlpatterns = [
     path('profile/', me_views.profile_get),
     path('profile/update/', me_views.profile_update),
     path('change-password/', me_views.change_password),
+    path('super-settings/set-default-master/', powerhouse_super_setting_views.set_default_master),
 ]
