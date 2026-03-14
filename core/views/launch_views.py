@@ -21,13 +21,15 @@ def _normalize_launch_base(launch_base: str) -> str:
 
 
 def _wallet_amount_for_launch(user, min_bet):
-    """When main is 0 and bonus >= min_bet, send only bonus; otherwise main + bonus."""
+    """Send only main_balance when main > 0; only bonus_balance when main is 0 and bonus >= min_bet. Never main + bonus."""
     main = float(user.main_balance or 0)
     bonus = float(user.bonus_balance or 0)
     min_bet_f = float(min_bet) if min_bet is not None else 0
-    if main == 0 and bonus >= min_bet_f:
+    if main > 0:
+        return main
+    if bonus >= min_bet_f:
         return bonus
-    return main + bonus
+    return 0
 
 
 def _launch_game_common(request):
