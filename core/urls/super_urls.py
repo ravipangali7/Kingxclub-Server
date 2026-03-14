@@ -24,6 +24,7 @@ urlpatterns = [
     path('masters/create/', user_views.master_create),
     path('masters/<int:pk>/edit/', user_views.master_update),
     path('masters/<int:pk>/delete/', user_views.master_delete),
+    path('masters/<int:pk>/set-default/', user_views.master_set_default),
     path('masters/<int:pk>/regenerate-pin/', user_views.master_regenerate_pin),
     path('masters/<int:pk>/reset-password/', user_views.master_reset_password),
     path('players/', user_views.player_list),

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from core.permissions import require_role, get_supers_queryset, get_masters_queryset, get_players_queryset
-from core.models import User, UserRole, Deposit, Withdraw, GameLog, Transaction, ActivityLog
+from core.models import User, UserRole, Deposit, Withdraw, GameLog, Transaction, ActivityLog, SuperSetting
 from core.serializers import (
     UserListSerializer, UserDetailSerializer, UserCreateUpdateSerializer,
     DepositSerializer, WithdrawSerializer, GameLogSerializer,
@@ -65,7 +65,11 @@ def _user_list_response(request, role_type):
             _last_dep=Subquery(dep_max),
             _last_wd=Subquery(wd_max),
         )
-    serializer = UserListSerializer(qs.order_by('-created_at'), many=True)
+    context = {}
+    if role_type == 'master':
+        settings = SuperSetting.get_settings()
+        context['default_master_id'] = settings.default_master_id if settings else None
+    serializer = UserListSerializer(qs.order_by('-created_at'), many=True, context=context)
     return Response(serializer.data)
 
 
@@ -224,6 +228,27 @@ def user_detail_supers(request, pk):
 @permission_classes([IsAuthenticated])
 def user_detail_masters(request, pk):
     return _user_detail_response(request, 'master', pk)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def master_set_default(request, pk):
+    """Set this master as the default master for new signups. Requires PIN."""
+    err, qs = _get_queryset(request, 'master')
+    if err:
+        return err
+    obj = qs.filter(pk=pk).first()
+    if not obj:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+    pin_err = _verify_admin_pin(request)
+    if pin_err:
+        return pin_err
+    settings = SuperSetting.get_settings()
+    if not settings:
+        settings = SuperSetting()
+    settings.default_master_id = pk
+    settings.save()
+    return Response({'detail': 'Default master updated successfully.'})
 
 
 @api_view(['GET'])

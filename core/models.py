@@ -287,7 +287,7 @@ class PaymentMode(models.Model):
     status = models.CharField(
         max_length=20,
         choices=PaymentModeStatus.choices,
-        default=PaymentModeStatus.PENDING
+        default=PaymentModeStatus.APPROVED
     )
     reject_reason = models.TextField(blank=True)
     action_by = models.ForeignKey(
