@@ -16,18 +16,21 @@ def _parse_dates(request):
 
 def _base_qs(request):
     if request.user.role in (UserRole.POWERHOUSE, getattr(UserRole.POWERHOUSE, "value", "powerhouse")):
-        return Transaction.objects.all().select_related("user").order_by("-created_at")
+        return Transaction.objects.all().select_related("user", "processed_by").order_by("-created_at")
     return Transaction.objects.filter(
         Q(user__parent=request.user)
         | Q(user__parent__parent=request.user)
         | Q(user=request.user)
-    ).select_related("user").order_by("-created_at")
+    ).select_related("user", "processed_by").order_by("-created_at")
 
 
 def _to_statement_row(tx):
     debit = str(tx.amount) if tx.action_type == TransactionActionType.OUT else "0"
     credit = str(tx.amount) if tx.action_type == TransactionActionType.IN else "0"
     balance = str(tx.balance_after) if tx.balance_after is not None else ""
+    desc = tx.remarks or ""
+    if getattr(tx, "processed_by_id", None) and tx.processed_by:
+        desc = f"{desc} Processed by: {tx.processed_by.username}" if desc else f"Processed by: {tx.processed_by.username}"
     return {
         "id": tx.id,
         "username": tx.user.username if tx.user_id else "",
@@ -35,7 +38,7 @@ def _to_statement_row(tx):
         "debit": debit,
         "credit": credit,
         "balance": balance,
-        "description": tx.remarks or "",
+        "description": desc,
     }
 
 

@@ -673,6 +673,13 @@ class Transaction(models.Model):
         blank=True,
         related_name='transactions'
     )
+    processed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transactions_processed'
+    )
     balance_before = models.DecimalField(
         max_digits=16,
         decimal_places=2,

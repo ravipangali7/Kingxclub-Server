@@ -66,6 +66,7 @@ def approve_deposit(deposit, processed_by, pin=None, use_password=False):
             amount=amount,
             status=TransactionStatus.SUCCESS,
             remarks=f'Deposit #{deposit.pk} approved',
+            processed_by=processed_by,
         )
         if user.role == UserRole.PLAYER:
             notify_player_approval(user, processed_by, f'Your deposit of ₹{amount} has been approved.')
@@ -92,6 +93,7 @@ def approve_deposit(deposit, processed_by, pin=None, use_password=False):
         status=TransactionStatus.SUCCESS,
         to_user=user,
         remarks=f'Deposit #{deposit.pk} for {user.username}',
+        processed_by=processed_by,
     )
     Transaction.objects.create(
         user=user,
@@ -102,6 +104,7 @@ def approve_deposit(deposit, processed_by, pin=None, use_password=False):
         status=TransactionStatus.SUCCESS,
         from_user=parent,
         remarks=f'Deposit #{deposit.pk} approved',
+        processed_by=processed_by,
     )
     if user.role == UserRole.PLAYER:
         notify_player_approval(user, processed_by, f'Your deposit of ₹{amount} has been approved.')
@@ -127,6 +130,19 @@ def approve_deposit(deposit, processed_by, pin=None, use_password=False):
                     )
                     user.bonus_balance = (user.bonus_balance or Decimal('0')) + bonus_amount
                     user.save(update_fields=['bonus_balance'])
+                    parent.main_balance = (parent.main_balance or Decimal('0')) - bonus_amount
+                    parent.save(update_fields=['main_balance'])
+                    Transaction.objects.create(
+                        user=parent,
+                        action_type=TransactionActionType.OUT,
+                        wallet=TransactionWallet.MAIN_BALANCE,
+                        transaction_type=TransactionType.BONUS,
+                        amount=bonus_amount,
+                        status=TransactionStatus.SUCCESS,
+                        to_user=user,
+                        remarks=f'First deposit bonus for {user.username}',
+                        processed_by=processed_by,
+                    )
                     Transaction.objects.create(
                         user=user,
                         action_type=TransactionActionType.IN,
@@ -135,5 +151,6 @@ def approve_deposit(deposit, processed_by, pin=None, use_password=False):
                         amount=bonus_amount,
                         status=TransactionStatus.SUCCESS,
                         remarks=f'First deposit bonus (Deposit #{deposit.pk})',
+                        processed_by=processed_by,
                     )
     return True, None

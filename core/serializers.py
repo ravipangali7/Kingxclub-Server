@@ -105,6 +105,7 @@ class UserListSerializer(serializers.ModelSerializer):
     masters_count = serializers.SerializerMethodField()
     total_balance = serializers.SerializerMethodField()
     total_win_loss = serializers.SerializerMethodField()
+    total_bet = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -115,7 +116,7 @@ class UserListSerializer(serializers.ModelSerializer):
             'is_active', 'created_at', 'pin',
             'masters_balance', 'masters_pl_balance', 'users_balance',
             'players_count', 'masters_count',
-            'total_balance', 'total_win_loss',
+            'total_balance', 'total_win_loss', 'total_bet',
         ]
 
     def get_no_activity_7_days(self, obj):
@@ -187,6 +188,12 @@ class UserListSerializer(serializers.ModelSerializer):
         if win is None and lose is None:
             return None
         return (win or 0) - (lose or 0)
+
+    def get_total_bet(self, obj):
+        """For players: from annotated _bet_sum (Sum of game_logs bet_amount)."""
+        if obj.role != UserRole.PLAYER:
+            return None
+        return getattr(obj, '_bet_sum', None)
 
 
 class UserDetailSerializer(serializers.ModelSerializer):

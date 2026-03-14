@@ -60,6 +60,7 @@ def _user_list_response(request, role_type):
         qs = qs.annotate(
             _win_sum=Sum('game_logs__win_amount'),
             _lose_sum=Sum('game_logs__lose_amount'),
+            _bet_sum=Sum('game_logs__bet_amount'),
             _last_gl=Subquery(gl_max),
             _last_dep=Subquery(dep_max),
             _last_wd=Subquery(wd_max),

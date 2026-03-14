@@ -39,6 +39,7 @@ def approve_bonus_request(bonus_request, processed_by, pin=None, use_password=Fa
             amount=amount,
             status=TransactionStatus.SUCCESS,
             remarks=f'Bonus request #{bonus_request.pk} approved',
+            processed_by=processed_by,
         )
         if user.role == UserRole.PLAYER:
             notify_player_approval(user, processed_by, f'Your bonus request of ₹{amount} has been approved.')
@@ -65,6 +66,7 @@ def approve_bonus_request(bonus_request, processed_by, pin=None, use_password=Fa
         status=TransactionStatus.SUCCESS,
         to_user=user,
         remarks=f'Bonus request #{bonus_request.pk} for {user.username}',
+        processed_by=processed_by,
     )
     Transaction.objects.create(
         user=user,
@@ -75,6 +77,7 @@ def approve_bonus_request(bonus_request, processed_by, pin=None, use_password=Fa
         status=TransactionStatus.SUCCESS,
         from_user=parent,
         remarks=f'Bonus request #{bonus_request.pk} approved',
+        processed_by=processed_by,
     )
     if user.role == UserRole.PLAYER:
         notify_player_approval(user, processed_by, f'Your bonus request of ₹{amount} has been approved.')
