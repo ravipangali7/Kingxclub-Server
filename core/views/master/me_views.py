@@ -23,7 +23,8 @@ def profile_update(request):
     if err:
         return err
     u = request.user
-    for f in ['name', 'phone', 'email', 'whatsapp_number']:
+    # Only powerhouse/super can edit master whatsapp_number (from list-of-masters edit form)
+    for f in ['name', 'phone', 'email']:
         if f in request.data:
             setattr(u, f, request.data[f])
     u.save()
