@@ -2,6 +2,7 @@
 Public site: SiteSetting (single), CMSPage by slug, Testimonials list, second-home sections.
 """
 from django.conf import settings as django_settings
+from django.shortcuts import render
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -20,6 +21,26 @@ def site_setting(request):
         return Response({}, status=status.HTTP_200_OK)
     serializer = SiteSettingSerializer(obj)
     return Response(serializer.data)
+
+
+def share_preview(request):
+    """
+    Return HTML with Open Graph meta from SiteSetting so shared links show site logo/title.
+    Use this view for the document URL when serving the SPA to crawlers (e.g. GET /).
+    """
+    site = SiteSetting.objects.first()
+    og_title = (site.name or 'KarnaliX').strip() if site else 'KarnaliX'
+    og_url = request.build_absolute_uri('/')
+    og_description = (getattr(site, 'hero_title', None) or '').strip() or og_title
+    og_image = None
+    if site and site.logo:
+        og_image = _build_media_url(request, site.logo.name)
+    return render(request, 'og_preview.html', {
+        'og_title': og_title,
+        'og_url': og_url,
+        'og_description': og_description or None,
+        'og_image': og_image,
+    })
 
 
 @api_view(['GET'])
