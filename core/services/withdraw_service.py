@@ -56,11 +56,15 @@ def approve_withdraw(withdrawal, processed_by, pin=None, use_password=False):
             user.save(update_fields=['bonus_balance'])
             out_wallet = TransactionWallet.BONUS_BALANCE
         else:
-            if not eligibility['can_withdraw_main']:
+            staff_bypass = processed_by.role in (UserRole.SUPER, UserRole.MASTER, UserRole.POWERHOUSE)
+            if not staff_bypass and not eligibility['can_withdraw_main']:
                 return False, 'Main balance is not withdrawable until at least one game is played after deposit.'
-            if amount > eligibility['main_withdrawable']:
+            main_balance = user.main_balance or Decimal('0')
+            if amount > main_balance:
                 return False, 'Insufficient balance'
-            user.main_balance = (user.main_balance or Decimal('0')) - amount
+            if not staff_bypass and amount > eligibility['main_withdrawable']:
+                return False, 'Insufficient balance'
+            user.main_balance = main_balance - amount
             user.save(update_fields=['main_balance'])
             out_wallet = TransactionWallet.MAIN_BALANCE
     else:
