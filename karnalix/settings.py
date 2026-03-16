@@ -196,6 +196,10 @@ SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'https://kingxclub.com')
 # Google OAuth (Login with Google). Set GOOGLE_CLIENT_ID in env for id_token verification.
 GOOGLE_CLIENT_ID = '386184793784-njlhdvqjh0698tnc5tffi79m5pjqpig4.apps.googleusercontent.com'
 
+# WhatsApp OTP via Flexgrew API. Set FLEXGREW_API_KEY to enable OTP via WhatsApp (register / forgot-password).
+FLEXGREW_API_KEY = '34d05f7d9d0f684d9a3d3a3b63d569e3715bf41eacf3b66cb58bbd5d3b8cf16d'
+FLEXGREW_BASE_URL = 'https://flexgrew.cloud/api'
+
 # Email (OTP, etc.). All credentials from env. If EMAIL_HOST is empty, use console backend so dev runs without config.
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = '587'

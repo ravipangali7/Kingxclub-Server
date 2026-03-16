@@ -1,12 +1,13 @@
 """
 Send OTP via Flexgrew WhatsApp API.
-When FLEXGREW_API_KEY is set, create/find contact, start chat, send text.
+When FLEXGREW_API_KEY is set in settings, create/find contact, start chat, send text.
 Otherwise returns (False, "WhatsApp OTP not configured").
 """
 import logging
-import os
 
 import requests
+
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -14,13 +15,13 @@ REQUEST_TIMEOUT = 15
 
 
 def get_flexgrew_api_key() -> str:
-    """Return Flexgrew API key from environment."""
-    return (os.environ.get("FLEXGREW_API_KEY") or "").strip()
+    """Return Flexgrew API key from Django settings."""
+    return (getattr(settings, "FLEXGREW_API_KEY", None) or "").strip()
 
 
 def get_flexgrew_base_url() -> str:
-    """Return Flexgrew API base URL (no trailing slash)."""
-    url = (os.environ.get("FLEXGREW_BASE_URL") or "https://flexgrew.cloud/api").strip()
+    """Return Flexgrew API base URL (no trailing slash) from Django settings."""
+    url = (getattr(settings, "FLEXGREW_BASE_URL", None) or "https://flexgrew.cloud/api").strip()
     return url.rstrip("/")
 
 
