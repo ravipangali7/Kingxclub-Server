@@ -14,6 +14,7 @@ from rest_framework import status
 from core.models import User, PasswordResetOTP, SiteSetting
 from core.services.email_service import send_otp_email
 from core.services.sms_service import send_sms
+from core.services.whatsapp_service import send_whatsapp_otp
 
 
 def _mask_phone(phone):
@@ -90,19 +91,19 @@ def forgot_password_search(request):
 @permission_classes([AllowAny])
 def forgot_password_send_otp(request):
     """
-    POST { "user_id": int, "channel": "phone" | "email" }.
-    Generate OTP, store, send (stub). Return success/fail.
+    POST { "user_id": int, "channel": "phone" | "email" | "whatsapp" }.
+    Generate OTP, store, send. Return success/fail.
     """
     user_id = request.data.get("user_id")
     channel = (request.data.get("channel") or "").strip().lower()
-    if channel not in ("phone", "email"):
-        return Response({"detail": "channel must be 'phone' or 'email'."}, status=status.HTTP_400_BAD_REQUEST)
+    if channel not in ("phone", "email", "whatsapp"):
+        return Response({"detail": "channel must be 'phone', 'email', or 'whatsapp'."}, status=status.HTTP_400_BAD_REQUEST)
 
     user = User.objects.filter(pk=user_id).first()
     if not user:
         return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    if channel == "phone" and not (user.phone and user.phone.strip()):
+    if channel in ("phone", "whatsapp") and not (user.phone and user.phone.strip()):
         return Response({"detail": "User has no phone."}, status=status.HTTP_400_BAD_REQUEST)
     if channel == "email" and not (user.email and user.email.strip()):
         return Response({"detail": "User has no email."}, status=status.HTTP_400_BAD_REQUEST)
@@ -118,6 +119,10 @@ def forgot_password_send_otp(request):
         ok, msg = send_sms(user.phone, f"Your KarnaliX reset code: {otp}")
         if not ok:
             return Response({"detail": msg or "Failed to send SMS."}, status=status.HTTP_502_BAD_GATEWAY)
+    if channel == "whatsapp" and user.phone:
+        ok, msg = send_whatsapp_otp(user.phone, f"Your KarnaliX reset code: {otp}")
+        if not ok:
+            return Response({"detail": msg or "Failed to send WhatsApp."}, status=status.HTTP_502_BAD_GATEWAY)
     if channel == "email" and user.email:
         ok, msg = send_otp_email(user.email, otp)
         if not ok:
