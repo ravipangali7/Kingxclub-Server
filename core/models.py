@@ -544,13 +544,9 @@ class Game(models.Model):
     game_uid = models.CharField(max_length=255)
     image = models.ImageField(upload_to='games/', blank=True, null=True)
     image_url = models.URLField(blank=True, null=True)
-    coming_soon_image = models.ImageField(upload_to='games/', blank=True, null=True)
     min_bet = models.DecimalField(max_digits=16, decimal_places=2, default=default_decimal_zero)
     max_bet = models.DecimalField(max_digits=16, decimal_places=2, default=default_decimal_zero)
     is_active = models.BooleanField(default=True)
-    is_coming_soon = models.BooleanField(default=False)
-    coming_soon_launch_date = models.DateField(null=True, blank=True)
-    coming_soon_description = models.TextField(blank=True)
     is_top_game = models.BooleanField(default=False)
     is_popular_game = models.BooleanField(default=False)
     is_lobby = models.BooleanField(default=False)
@@ -857,7 +853,6 @@ class SiteSetting(models.Model):
     site_providers_json = models.JSONField(default=dict, blank=True)
     site_categories_game_json = models.JSONField(default=dict, blank=True)
     site_popular_games_json = models.JSONField(default=dict, blank=True)
-    site_coming_soon_json = models.JSONField(default=dict, blank=True)
     site_refer_bonus_json = models.JSONField(default=dict, blank=True)
     site_payments_accepted_json = models.JSONField(default=dict, blank=True)
     site_footer_json = models.JSONField(default=dict, blank=True)
@@ -925,6 +920,8 @@ class Promotion(models.Model):
     title = models.CharField(max_length=500)
     image = models.ImageField(upload_to='promotions/', blank=True, null=True)
     description = models.TextField(blank=True)  # HTML from rich-text editor
+    cta_link = models.CharField(max_length=500, blank=True)
+    cta_label = models.CharField(max_length=255, blank=True)
     is_active = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -937,6 +934,26 @@ class Promotion(models.Model):
 
     def __str__(self):
         return self.title[:50] or f"Promotion {self.pk}"
+
+
+# --- 16b4. ComingSoon (standalone coming soon items for home page) ---
+
+class ComingSoon(models.Model):
+    name = models.CharField(max_length=255)
+    image = models.ImageField(upload_to='coming_soon/', blank=True, null=True)
+    description = models.TextField(blank=True)
+    coming_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['coming_date', 'id']
+        verbose_name = 'Coming Soon'
+        verbose_name_plural = 'Coming Soon'
+
+    def __str__(self):
+        return self.name[:50] or f"Coming Soon {self.pk}"
 
 
 # --- 16c. LiveBettingSection (second home live betting block) ---

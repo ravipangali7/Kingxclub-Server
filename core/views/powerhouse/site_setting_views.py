@@ -120,7 +120,6 @@ def site_setting_update(request):
             'site_providers_json': _parse_json_field(request.data.get('site_providers_json'), {}),
             'site_categories_game_json': _parse_json_field(request.data.get('site_categories_game_json'), {}),
             'site_popular_games_json': _parse_json_field(request.data.get('site_popular_games_json'), {}),
-            'site_coming_soon_json': _parse_json_field(request.data.get('site_coming_soon_json'), {}),
             'site_refer_bonus_json': _parse_json_field(request.data.get('site_refer_bonus_json'), {}),
             'site_payments_accepted_json': _parse_json_field(request.data.get('site_payments_accepted_json'), {}),
             'site_footer_json': _parse_json_field(request.data.get('site_footer_json'), {}),

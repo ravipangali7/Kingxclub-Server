@@ -13,7 +13,7 @@ from core.serializers import (
 )
 
 _BOOL_GAME_FIELDS = (
-    'is_active', 'is_coming_soon', 'is_top_game', 'is_popular_game', 'is_lobby',
+    'is_active', 'is_top_game', 'is_popular_game', 'is_lobby',
 )
 
 

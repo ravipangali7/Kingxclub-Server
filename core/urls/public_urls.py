@@ -27,6 +27,7 @@ urlpatterns = [
     path('payment-methods/', site_views.payment_methods_list),
     path('slider/', site_views.slider_list),
     path('popups/', site_views.popup_list),
+    path('coming-soon/', site_views.coming_soon_list),
     path('live-betting/', site_views.live_betting_list),
     path('second-home-sections/', site_views.second_home_sections),
     path('cms/footer/', site_views.cms_pages_footer),

@@ -7,13 +7,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from core.models import GameCategory, GameProvider, Game, ComingSoonEnrollment
+from core.models import GameCategory, GameProvider, Game
 from core.serializers import (
     GameCategorySerializer,
     GameProviderSerializer,
     GameListSerializer,
     GameDetailSerializer,
-    ComingSoonGameSerializer,
 )
 
 
@@ -44,9 +43,9 @@ def provider_detail(request, pk):
     if not obj:
         return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
     provider_data = GameProviderSerializer(obj).data
-    games_count = Game.objects.filter(provider_id=pk, is_active=True, is_coming_soon=False).count()
+    games_count = Game.objects.filter(provider_id=pk, is_active=True).count()
     categories_qs = (
-        Game.objects.filter(provider_id=pk, is_active=True, is_coming_soon=False)
+        Game.objects.filter(provider_id=pk, is_active=True)
         .values_list('category_id', 'category__name', 'category__icon', 'category__svg')
         .distinct()
     )
@@ -98,13 +97,13 @@ def game_list(request):
         id_list = [int(i) for i in ids_param.split(',') if i.strip().isdigit()]
         games_by_id = {
             g.id: g
-            for g in Game.objects.filter(is_active=True, is_coming_soon=False, id__in=id_list).select_related('category', 'provider')
+            for g in Game.objects.filter(is_active=True, id__in=id_list).select_related('category', 'provider')
         }
         ordered = [games_by_id[i] for i in id_list if i in games_by_id]
         serializer = GameListSerializer(ordered, many=True)
         return Response({'count': len(ordered), 'next': None, 'previous': None, 'results': serializer.data})
 
-    qs = Game.objects.filter(is_active=True, is_coming_soon=False).select_related('category', 'provider').order_by('id')
+    qs = Game.objects.filter(is_active=True).select_related('category', 'provider').order_by('id')
     category_id = request.query_params.get('category_id') or request.query_params.get('category')
     if category_id:
         qs = qs.filter(category_id=category_id)
@@ -149,32 +148,15 @@ def game_list(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def coming_soon_list(request):
-    """GET games marked as coming soon (active + is_coming_soon=True)."""
-    qs = Game.objects.filter(is_active=True, is_coming_soon=True).select_related('category', 'provider').order_by('id')
-    serializer = ComingSoonGameSerializer(qs, many=True)
-    return Response(serializer.data)
+    """Legacy: coming-soon games moved to dedicated Coming Soon model. Returns empty list."""
+    return Response([])
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def coming_soon_enroll(request):
-    """POST: enroll current user for a coming-soon game (game_id in body). Idempotent."""
-    game_id = request.data.get('game_id')
-    if game_id is None:
-        return Response({'detail': 'game_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
-    try:
-        game_id = int(game_id)
-    except (TypeError, ValueError):
-        return Response({'detail': 'Invalid game_id.'}, status=status.HTTP_400_BAD_REQUEST)
-    game = Game.objects.filter(pk=game_id, is_active=True, is_coming_soon=True).first()
-    if not game:
-        return Response({'detail': 'Game not found or not coming soon.'}, status=status.HTTP_404_NOT_FOUND)
-    _, created = ComingSoonEnrollment.objects.get_or_create(
-        game=game,
-        user=request.user,
-        defaults={},
-    )
-    return Response({'detail': 'Enrolled.' if created else 'Already enrolled.', 'enrolled': created}, status=status.HTTP_201_CREATED)
+    """Legacy: coming-soon enrollments no longer supported (use Coming Soon model)."""
+    return Response({'detail': 'Coming soon enrollments are no longer supported.'}, status=status.HTTP_410_GONE)
 
 
 @api_view(['GET'])

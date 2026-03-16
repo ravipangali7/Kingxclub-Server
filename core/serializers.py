@@ -5,6 +5,7 @@ import json
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import (
+    ComingSoon,
     Country,
     User,
     UserRole,
@@ -412,7 +413,24 @@ class PromotionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Promotion
-        fields = ['id', 'title', 'image', 'image_url', 'description', 'is_active', 'order', 'created_at', 'updated_at']
+        fields = ['id', 'title', 'image', 'image_url', 'description', 'cta_link', 'cta_label', 'is_active', 'order', 'created_at', 'updated_at']
+
+    def get_image_url(self, obj):
+        if obj.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            return obj.image.url
+        return None
+
+
+# --- ComingSoon ---
+class ComingSoonSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = ComingSoon
+        fields = ['id', 'name', 'image', 'image_url', 'description', 'coming_date', 'is_active', 'created_at', 'updated_at']
 
     def get_image_url(self, obj):
         if obj.image:
@@ -678,7 +696,7 @@ class GameProviderSerializer(serializers.ModelSerializer):
         ]
 
     def get_single_game_id(self, obj):
-        qs = Game.objects.filter(provider=obj, is_active=True, is_coming_soon=False)
+        qs = Game.objects.filter(provider=obj, is_active=True)
         count = qs.count()
         if count == 1:
             return qs.values_list('id', flat=True).first()
@@ -697,7 +715,7 @@ class GameCategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'icon', 'svg', 'is_active', 'created_at', 'updated_at', 'games_count']
 
     def get_games_count(self, obj):
-        return Game.objects.filter(category=obj, is_active=True, is_coming_soon=False).count()
+        return Game.objects.filter(category=obj, is_active=True).count()
 
 
 # --- Game ---
@@ -709,9 +727,8 @@ class GameListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Game
         fields = [
-            'id', 'name', 'game_uid', 'image', 'image_url', 'coming_soon_image', 'min_bet', 'max_bet', 'is_active',
+            'id', 'name', 'game_uid', 'image', 'image_url', 'min_bet', 'max_bet', 'is_active',
             'category', 'category_name', 'provider', 'provider_name', 'provider_code',
-            'is_coming_soon', 'coming_soon_launch_date', 'coming_soon_description',
             'is_top_game', 'is_popular_game', 'is_lobby', 'created_at',
         ]
 
@@ -723,21 +740,9 @@ class GameDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Game
         fields = [
-            'id', 'name', 'game_uid', 'image', 'image_url', 'coming_soon_image', 'min_bet', 'max_bet', 'is_active',
+            'id', 'name', 'game_uid', 'image', 'image_url', 'min_bet', 'max_bet', 'is_active',
             'category', 'provider',
-            'is_coming_soon', 'coming_soon_launch_date', 'coming_soon_description',
             'is_top_game', 'is_popular_game', 'is_lobby', 'created_at', 'updated_at',
-        ]
-
-
-class ComingSoonGameSerializer(serializers.ModelSerializer):
-    """For public coming-soon-games list: id, name, image, image_url, coming_soon_image, coming_soon_launch_date, coming_soon_description."""
-
-    class Meta:
-        model = Game
-        fields = [
-            'id', 'name', 'image', 'image_url', 'coming_soon_image',
-            'coming_soon_launch_date', 'coming_soon_description',
         ]
 
 
