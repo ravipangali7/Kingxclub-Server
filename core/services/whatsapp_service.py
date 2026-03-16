@@ -32,11 +32,14 @@ def _phone_to_e164(phone: str) -> str:
 def _create_or_get_contact(base_url: str, headers: dict, phone_e164: str) -> tuple[bool, int | None, str]:
     """
     Create contact or get existing. Returns (ok, contact_id, error_message).
+    Uses POST {base_url}/contacts (e.g. https://flexgrew.cloud/api/contacts).
     """
+    url = f"{base_url}/contacts"
     payload = {"first_name": "User", "phone": phone_e164}
+    print(f"Flexgrew POST {url}")
     try:
         resp = requests.post(
-            f"{base_url}/contacts",
+            url,
             json=payload,
             headers=headers,
             timeout=REQUEST_TIMEOUT,
@@ -87,12 +90,15 @@ def _create_or_get_contact(base_url: str, headers: dict, phone_e164: str) -> tup
         print(f"Flexgrew 409 but search returned no usable contact: data={data}")
         return False, None, "Contact exists but could not retrieve id"
 
-    # 401, 429, 500, etc.
+    # 401, 429, 500, 404, etc.
     try:
         err_data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
     except Exception:
         err_data = {}
-    msg = err_data.get("message", resp.text or f"HTTP {resp.status_code}")
+    if resp.status_code == 404:
+        print(f"Flexgrew 404: POST {url} not found. Check FLEXGREW_BASE_URL (expected https://flexgrew.cloud/api).")
+        return False, None, "WhatsApp API endpoint not found (404). Check API base URL."
+    msg = err_data.get("message", resp.text[:200] if resp.text else f"HTTP {resp.status_code}")
     if resp.status_code == 401:
         print("Flexgrew API key invalid or expired (401). Check FLEXGREW_API_KEY in settings.")
     else:
