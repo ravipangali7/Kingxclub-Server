@@ -3,13 +3,9 @@ Send OTP via Flexgrew WhatsApp API.
 When FLEXGREW_API_KEY is set in settings, create/find contact, start chat, send text.
 Otherwise returns (False, "WhatsApp OTP not configured").
 """
-import logging
-
 import requests
 
 from django.conf import settings
-
-logger = logging.getLogger(__name__)
 
 REQUEST_TIMEOUT = 15
 
@@ -46,43 +42,62 @@ def _create_or_get_contact(base_url: str, headers: dict, phone_e164: str) -> tup
             timeout=REQUEST_TIMEOUT,
         )
     except requests.RequestException as e:
-        logger.exception("Flexgrew create contact request failed: %s", e)
+        print(f"Flexgrew create contact request failed: {e}")
         return False, None, str(e)
 
     if resp.status_code == 201:
         data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
         cid = data.get("id")
         if cid is not None:
+            print(f"Flexgrew contact created: id={cid} phone={phone_e164[:6]}***")
             return True, int(cid), ""
+        print(f"Flexgrew create contact 201 but no id in response: {data}")
         return False, None, "Invalid create contact response"
 
     if resp.status_code == 409:
         # Contact already exists; search by phone to get id
+        print(f"Flexgrew contact exists (409), searching by phone={phone_e164[:6]}***")
         try:
             search_resp = requests.get(
                 f"{base_url}/contacts",
-                params={"search": phone_e164, "limit": 1},
+                params={"search": phone_e164, "limit": 5},
                 headers=headers,
                 timeout=REQUEST_TIMEOUT,
             )
         except requests.RequestException as e:
-            logger.exception("Flexgrew contacts search failed: %s", e)
+            print(f"Flexgrew contacts search failed: {e}")
             return False, None, str(e)
         if search_resp.status_code != 200:
+            print(f"Flexgrew contacts search returned {search_resp.status_code}: {search_resp.text[:200]}")
             return False, None, "Could not find existing contact"
         data = search_resp.json() if search_resp.headers.get("content-type", "").startswith("application/json") else {}
         items = data.get("data") or []
+        # Match by phone (API may return multiple; find exact match)
+        for item in items:
+            if isinstance(item, dict):
+                cid = item.get("id")
+                if cid is not None:
+                    item_phone = (item.get("phone") or "").strip().replace(" ", "")
+                    if item_phone == phone_e164 or (item.get("phone") or "").strip() == phone_e164:
+                        print(f"Flexgrew found existing contact: id={cid}")
+                        return True, int(cid), ""
         if items and isinstance(items[0], dict) and items[0].get("id") is not None:
+            print(f"Flexgrew using first search result as contact: id={items[0]['id']}")
             return True, int(items[0]["id"]), ""
+        print(f"Flexgrew 409 but search returned no usable contact: data={data}")
         return False, None, "Contact exists but could not retrieve id"
 
     # 401, 429, 500, etc.
+    try:
+        err_data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+    except Exception:
+        err_data = {}
+    msg = err_data.get("message", resp.text or f"HTTP {resp.status_code}")
     if resp.status_code == 401:
-        logger.warning("Flexgrew API key invalid or expired")
-        return False, None, "WhatsApp service error"
-    data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
-    msg = data.get("message", resp.text or f"HTTP {resp.status_code}")
-    return False, None, msg
+        print("Flexgrew API key invalid or expired (401). Check FLEXGREW_API_KEY in settings.")
+    else:
+        print(f"Flexgrew create contact failed: status={resp.status_code} message={msg}")
+    return False, None, msg if resp.status_code != 401 else "WhatsApp service error"
 
 
 def _start_chat(base_url: str, headers: dict, contact_id: int) -> tuple[bool, str | None, str]:
@@ -95,18 +110,21 @@ def _start_chat(base_url: str, headers: dict, contact_id: int) -> tuple[bool, st
             timeout=REQUEST_TIMEOUT,
         )
     except requests.RequestException as e:
-        logger.exception("Flexgrew start chat request failed: %s", e)
+        print(f"Flexgrew start chat request failed: {e}")
         return False, None, str(e)
 
     if resp.status_code not in (200, 201):
         data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
         msg = data.get("message", resp.text or f"HTTP {resp.status_code}")
+        print(f"Flexgrew start chat failed: status={resp.status_code} contact_id={contact_id} message={msg}")
         return False, None, msg
 
     data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
     uuid_val = data.get("uuid")
     if uuid_val:
+        print(f"Flexgrew chat started: contact_id={contact_id} uuid={uuid_val[:8]}...")
         return True, str(uuid_val), ""
+    print(f"Flexgrew start chat response missing uuid: {data}")
     return False, None, "Invalid start chat response"
 
 
@@ -120,13 +138,16 @@ def _send_text_message(base_url: str, headers: dict, chat_uuid: str, text: str) 
             timeout=REQUEST_TIMEOUT,
         )
     except requests.RequestException as e:
-        logger.exception("Flexgrew send message request failed: %s", e)
+        print(f"Flexgrew send message request failed: {e}")
         return False, str(e)
 
     if resp.status_code in (200, 201):
+        print("Flexgrew message sent successfully")
         return True, ""
     data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
-    return False, data.get("message", resp.text or f"HTTP {resp.status_code}")
+    msg = data.get("message", resp.text or f"HTTP {resp.status_code}")
+    print(f"Flexgrew send message failed: status={resp.status_code} message={msg}")
+    return False, msg
 
 
 def send_whatsapp_otp(to: str, text: str) -> tuple[bool, str]:
@@ -138,14 +159,16 @@ def send_whatsapp_otp(to: str, text: str) -> tuple[bool, str]:
     """
     api_key = get_flexgrew_api_key()
     if not api_key:
-        logger.warning("WhatsApp OTP not configured; FLEXGREW_API_KEY not set.")
+        print("WhatsApp OTP not configured; FLEXGREW_API_KEY not set in settings.")
         return False, "WhatsApp OTP not configured"
 
     phone_e164 = _phone_to_e164(to)
     if not phone_e164 or len(phone_e164) < 11:
+        print(f"WhatsApp OTP invalid phone: to={to[:8]}*** e164={phone_e164 or 'empty'}")
         return False, "Invalid phone number"
 
     base_url = get_flexgrew_base_url()
+    print(f"WhatsApp OTP: sending to {phone_e164[:6]}*** via {base_url}")
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",

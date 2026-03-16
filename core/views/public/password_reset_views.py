@@ -116,18 +116,25 @@ def forgot_password_send_otp(request):
     PasswordResetOTP.objects.create(user=user, otp=otp, channel=channel, expires_at=expires_at)
 
     if channel == "phone" and user.phone:
+        print(f"forgot_password_send_otp: sending via SMS for user_id={user_id}")
         ok, msg = send_sms(user.phone, f"Your KarnaliX reset code: {otp}")
         if not ok:
+            print(f"forgot_password_send_otp: SMS failed for user_id={user_id}: {msg}")
             return Response({"detail": msg or "Failed to send SMS."}, status=status.HTTP_502_BAD_GATEWAY)
     if channel == "whatsapp" and user.phone:
+        print(f"forgot_password_send_otp: sending via WhatsApp for user_id={user_id} phone={user.phone[:4]}***")
         ok, msg = send_whatsapp_otp(user.phone, f"Your KarnaliX reset code: {otp}")
         if not ok:
+            print(f"forgot_password_send_otp: WhatsApp failed for user_id={user_id}: {msg}")
             return Response({"detail": msg or "Failed to send WhatsApp."}, status=status.HTTP_502_BAD_GATEWAY)
     if channel == "email" and user.email:
+        print(f"forgot_password_send_otp: sending via email for user_id={user_id}")
         ok, msg = send_otp_email(user.email, otp)
         if not ok:
+            print(f"forgot_password_send_otp: email failed for user_id={user_id}: {msg}")
             return Response({"detail": msg or "Failed to send email."}, status=status.HTTP_502_BAD_GATEWAY)
 
+    print(f"forgot_password_send_otp: OTP sent successfully for user_id={user_id} channel={channel}")
     return Response({"detail": "OTP sent."})
 
 
