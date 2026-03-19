@@ -107,6 +107,7 @@ def site_setting_update(request):
             'whatsapp_number': request.data.get('whatsapp_number') or '',
             'hero_title': request.data.get('hero_title') or '',
             'hero_subtitle': request.data.get('hero_subtitle') or '',
+            'scrolling_text': request.data.get('scrolling_text') if request.data.get('scrolling_text') is not None else '',
             'footer_description': request.data.get('footer_description') or '',
             'promo_banners': _parse_promo_banners(request.data.get('promo_banners')),
             'active_players': _parse_positive_int(request.data.get('active_players')) or 0,

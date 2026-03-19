@@ -16,6 +16,7 @@ from core.views.master import (
     statement_views,
     report_views,
 )
+from core.views.player import transfer_views
 
 urlpatterns = [
     path('dashboard/', dashboard_views.dashboard),
@@ -62,4 +63,5 @@ urlpatterns = [
     path('profile/', me_views.profile_get),
     path('profile/update/', me_views.profile_update),
     path('change-password/', me_views.change_password),
+    path('transfer/', transfer_views.transfer),
 ]

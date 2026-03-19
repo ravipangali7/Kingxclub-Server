@@ -17,6 +17,7 @@ from core.views.super import (
     statement_views,
     report_views,
 )
+from core.views.player import transfer_views
 
 urlpatterns = [
     path('dashboard/', dashboard_views.dashboard),
@@ -75,4 +76,5 @@ urlpatterns = [
     path('profile/update/', me_views.profile_update),
     path('change-password/', me_views.change_password),
     path('super-settings/set-default-master/', powerhouse_super_setting_views.set_default_master),
+    path('transfer/', transfer_views.transfer),
 ]
