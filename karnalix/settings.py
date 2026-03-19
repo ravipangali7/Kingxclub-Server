@@ -193,8 +193,9 @@ GAME_PROVIDER_API_SECRET = ''
 # SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'https://luckyuser365.com')
 SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'https://kingxclub.com')
 
-# Google OAuth (Login with Google). Set GOOGLE_CLIENT_ID in env for id_token verification.
-GOOGLE_CLIENT_ID = '386184793784-njlhdvqjh0698tnc5tffi79m5pjqpig4.apps.googleusercontent.com'
+# Google OAuth: runtime config now comes from Site Settings.
+# Keep this as env-only legacy fallback for older deployments.
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 
 # WhatsApp OTP via Flexgrew API. Set FLEXGREW_API_KEY to enable OTP via WhatsApp (register / forgot-password).
 FLEXGREW_API_KEY = '34d05f7d9d0f684d9a3d3a3b63d569e3715bf41eacf3b66cb58bbd5d3b8cf16d'

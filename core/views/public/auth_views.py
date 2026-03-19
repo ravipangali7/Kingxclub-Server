@@ -3,7 +3,6 @@ Public auth: login, register, Google OAuth. Authenticated: me (current user + ba
 """
 import re
 import requests
-from django.conf import settings as django_settings
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -12,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 
-from core.models import User, UserRole, SignupSession, SuperSetting, ActivityAction
+from core.models import User, UserRole, SignupSession, SuperSetting, SiteSetting, ActivityAction
 from core.serializers import (
     LoginSerializer,
     RegisterSerializer,
@@ -33,6 +32,18 @@ def get_default_master():
     if settings and settings.default_master_id:
         return settings.default_master
     return User.objects.filter(role=UserRole.MASTER).first()
+
+
+def _get_google_auth_config():
+    site = SiteSetting.objects.first()
+    if not site:
+        return {'enabled': False, 'client_id': '', 'client_secret': '', 'redirect_uri': ''}
+    return {
+        'enabled': bool(getattr(site, 'google_auth_enabled', False)),
+        'client_id': (getattr(site, 'google_client_id', '') or '').strip(),
+        'client_secret': (getattr(site, 'google_client_secret', '') or '').strip(),
+        'redirect_uri': (getattr(site, 'google_redirect_uri', '') or '').strip(),
+    }
 
 
 @api_view(['POST'])
@@ -151,11 +162,11 @@ def me(request):
 def _verify_google_id_token(id_token):
     """
     Verify Google id_token via tokeninfo endpoint. Returns payload dict with sub, email, name
-    or None if invalid. Validates audience if GOOGLE_CLIENT_ID is set.
+    or None if invalid. Validates audience if Google client_id is set.
     """
     if not id_token or not id_token.strip():
         return None
-    client_id = getattr(django_settings, 'GOOGLE_CLIENT_ID', None) or ''
+    client_id = _get_google_auth_config()['client_id']
     try:
         r = requests.get(
             'https://oauth2.googleapis.com/tokeninfo',
@@ -186,7 +197,8 @@ def google_login(request):
     If user exists for this Google account -> { token, user }.
     If new -> { needs_username: true, email, name } (no user created yet).
     """
-    if not getattr(django_settings, 'GOOGLE_CLIENT_ID', None):
+    google_cfg = _get_google_auth_config()
+    if not google_cfg['enabled'] or not google_cfg['client_id']:
         return Response(
             {'detail': 'Google login is not configured.'},
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -227,7 +239,8 @@ def google_complete(request):
     POST { id_token, username, password }. Creates user for new Google signup after username and password are provided.
     Returns { token, user }.
     """
-    if not getattr(django_settings, 'GOOGLE_CLIENT_ID', None):
+    google_cfg = _get_google_auth_config()
+    if not google_cfg['enabled'] or not google_cfg['client_id']:
         return Response(
             {'detail': 'Google login is not configured.'},
             status=status.HTTP_503_SERVICE_UNAVAILABLE,

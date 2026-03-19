@@ -859,6 +859,10 @@ class SiteSetting(models.Model):
     site_welcome_deposit_json = models.JSONField(default=dict, blank=True)
     scrolling_text = models.TextField(blank=True, default='')
     site_theme_json = models.JSONField(default=dict, blank=True)  # CSS var overrides: primary, accent, etc. (HSL strings)
+    google_auth_enabled = models.BooleanField(default=False)
+    google_client_id = models.CharField(max_length=255, blank=True)
+    google_client_secret = models.CharField(max_length=255, blank=True)
+    google_redirect_uri = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
