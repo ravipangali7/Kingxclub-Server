@@ -75,7 +75,7 @@ def signup_send_otp(request):
     expires_at = now + timedelta(minutes=10)
     SignupOTP.objects.create(phone=normalized, otp=otp, expires_at=expires_at)
 
-    text = f"Your KarnaliX verification code: {otp}"
+    text = f"Your KingxClub verification code: {otp}"
     if channel == "whatsapp":
         ok, msg = send_whatsapp_otp(normalized, text)
     else:
