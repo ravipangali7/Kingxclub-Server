@@ -155,7 +155,8 @@ def register(request):
 @permission_classes([IsAuthenticated])
 def me(request):
     """GET current user and header balances."""
-    serializer = MeSerializer(request.user)
+    u = User.objects.select_related('parent').get(pk=request.user.pk)
+    serializer = MeSerializer(u)
     return Response(serializer.data)
 
 

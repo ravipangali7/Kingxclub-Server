@@ -31,6 +31,7 @@ from core.views.powerhouse import (
 from core.views.super import statement_views as super_statement_views
 from core.views.super import report_views as super_report_views
 from core.views.player import transfer_views
+from core.views.shared import reject_reason_suggestions_views
 
 urlpatterns = [
     path('dashboard/', dashboard_views.dashboard),
@@ -131,4 +132,5 @@ urlpatterns = [
     path('countries/', country_views.country_list_create),
     path('countries/<int:pk>/', country_views.country_detail),
     path('transfer/', transfer_views.transfer),
+    path('reject-reason-suggestions/', reject_reason_suggestions_views.reject_reason_suggestions),
 ]

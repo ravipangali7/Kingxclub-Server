@@ -15,6 +15,10 @@ from core.notification_utils import notify_player_approval
 from core.services.withdraw_eligibility import get_withdraw_eligibility
 
 
+def _withdraw_reference_id(withdrawal):
+    return (getattr(withdrawal, 'reference_id', '') or '').strip()
+
+
 def approve_withdraw(withdrawal, processed_by, pin=None, use_password=False):
     user = withdrawal.user
     amount = withdrawal.amount
@@ -27,6 +31,7 @@ def approve_withdraw(withdrawal, processed_by, pin=None, use_password=False):
         withdrawal.processed_by = processed_by
         withdrawal.processed_at = timezone.now()
         withdrawal.save(update_fields=['status', 'processed_by', 'processed_at'])
+        wref = _withdraw_reference_id(withdrawal)
         Transaction.objects.create(
             user=user,
             action_type=TransactionActionType.OUT,
@@ -36,6 +41,7 @@ def approve_withdraw(withdrawal, processed_by, pin=None, use_password=False):
             status=TransactionStatus.SUCCESS,
             remarks='Withdraw approved',
             processed_by=processed_by,
+            reference_id=wref,
         )
         if user.role == UserRole.PLAYER:
             notify_player_approval(user, processed_by, f'Your withdrawal of ₹{amount} has been approved.')
@@ -80,6 +86,7 @@ def approve_withdraw(withdrawal, processed_by, pin=None, use_password=False):
     withdrawal.processed_by = processed_by
     withdrawal.processed_at = timezone.now()
     withdrawal.save(update_fields=['status', 'processed_by', 'processed_at'])
+    wref = _withdraw_reference_id(withdrawal)
     Transaction.objects.create(
         user=user,
         action_type=TransactionActionType.OUT,
@@ -89,6 +96,7 @@ def approve_withdraw(withdrawal, processed_by, pin=None, use_password=False):
         status=TransactionStatus.SUCCESS,
         remarks='Withdraw approved',
         processed_by=processed_by,
+        reference_id=wref,
     )
     Transaction.objects.create(
         user=parent,
@@ -100,6 +108,7 @@ def approve_withdraw(withdrawal, processed_by, pin=None, use_password=False):
         from_user=user,
         remarks='Withdraw from ' + user.username,
         processed_by=processed_by,
+        reference_id=wref,
     )
     if user.role == UserRole.PLAYER:
         notify_player_approval(user, processed_by, f'Your withdrawal of ₹{amount} has been approved.')

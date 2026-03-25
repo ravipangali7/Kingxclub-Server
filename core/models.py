@@ -107,6 +107,10 @@ def default_decimal_zero():
     return Decimal('0.00')
 
 
+def default_reject_reason_suggestions():
+    return {'data': []}
+
+
 # --- 0. Country (for currency by country_code) ---
 
 class Country(models.Model):
@@ -152,6 +156,7 @@ class SuperSetting(models.Model):
         related_name='+',
         limit_choices_to={'role': UserRole.MASTER},
     )
+    reject_reason_suggestions = models.JSONField(default=default_reject_reason_suggestions, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -186,6 +191,8 @@ class User(AbstractUser):
     name = models.CharField(max_length=255, blank=True)
     phone = models.CharField(max_length=50, blank=True)
     whatsapp_number = models.CharField(max_length=50, blank=True)
+    whatsapp_deposit = models.CharField(max_length=50, blank=True)
+    whatsapp_withdraw = models.CharField(max_length=50, blank=True)
     country_code = models.CharField(max_length=5, blank=True)
     google_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
     pin = models.CharField(max_length=255, blank=True, null=True)
@@ -406,6 +413,7 @@ class Withdraw(models.Model):
     processed_at = models.DateTimeField(null=True, blank=True)
     screenshot = models.ImageField(upload_to='withdraw_screenshots/', blank=True, null=True)
     remarks = models.TextField(blank=True)
+    reference_id = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -689,6 +697,7 @@ class Transaction(models.Model):
         blank=True
     )
     remarks = models.TextField(blank=True)
+    reference_id = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

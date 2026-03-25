@@ -1,4 +1,5 @@
 from django.urls import path
+from core.views.shared import reject_reason_suggestions_views
 from core.views.master import (
     dashboard_views,
     user_views,
@@ -64,4 +65,5 @@ urlpatterns = [
     path('profile/update/', me_views.profile_update),
     path('change-password/', me_views.change_password),
     path('transfer/', transfer_views.transfer),
+    path('reject-reason-suggestions/', reject_reason_suggestions_views.reject_reason_suggestions),
 ]

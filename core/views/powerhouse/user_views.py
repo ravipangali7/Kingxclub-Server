@@ -85,6 +85,9 @@ def _user_create_response(request, role_type):
         return err
     role_map = {'super': UserRole.SUPER, 'master': UserRole.MASTER, 'player': UserRole.PLAYER}
     data = request.data.copy()
+    if role_type == 'master':
+        data.pop('whatsapp_deposit', None)
+        data.pop('whatsapp_withdraw', None)
     data['role'] = role_map[role_type]
     if role_type == 'super':
         data['parent'] = request.user.id
@@ -105,7 +108,11 @@ def _user_update_response(request, role_type, pk):
     obj = qs.filter(pk=pk).first()
     if not obj:
         return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
-    ser = UserCreateUpdateSerializer(obj, data=request.data, partial=(request.method == 'PATCH'))
+    data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+    if role_type == 'master':
+        data.pop('whatsapp_deposit', None)
+        data.pop('whatsapp_withdraw', None)
+    ser = UserCreateUpdateSerializer(obj, data=data, partial=(request.method == 'PATCH'))
     ser.is_valid(raise_exception=True)
     ser.save()
     return Response(UserDetailSerializer(obj).data)

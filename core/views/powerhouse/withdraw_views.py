@@ -9,6 +9,8 @@ from core.permissions import require_role
 from core.models import Withdraw, User, UserRole
 from core.serializers import WithdrawSerializer
 from core.services.withdraw_service import approve_withdraw
+from core.services.reference_id_validation import validate_ref_unique
+from django.db.models import Q
 
 
 @api_view(['POST'])
@@ -32,6 +34,12 @@ def withdraw_direct(request):
     user_id = request.data.get('user_id')
     amount_raw = request.data.get('amount')
     remarks = request.data.get('remarks', '') or ''
+    reference_id = (request.data.get('reference_id') or '').strip()
+    if not reference_id:
+        return Response({'detail': 'Reference ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+    ok, err_msg = validate_ref_unique(reference_id)
+    if not ok:
+        return Response({'detail': err_msg}, status=status.HTTP_400_BAD_REQUEST)
     if user_id is None:
         return Response({'detail': 'user_id required.'}, status=status.HTTP_400_BAD_REQUEST)
     if amount_raw is None:
@@ -44,7 +52,7 @@ def withdraw_direct(request):
     if not User.objects.filter(pk=user_id, role__in=[UserRole.SUPER, UserRole.MASTER, UserRole.PLAYER]).exists():
         return Response({'detail': 'User not found or not allowed.'}, status=status.HTTP_404_NOT_FOUND)
 
-    wd = Withdraw.objects.create(user_id=user_id, amount=amount, remarks=remarks, status='pending')
+    wd = Withdraw.objects.create(user_id=user_id, amount=amount, remarks=remarks, reference_id=reference_id, status='pending')
     ok, msg = approve_withdraw(wd, request.user)
     if not ok:
         wd.delete()
@@ -61,7 +69,7 @@ def withdraw_list(request):
     qs = Withdraw.objects.all().select_related('user', 'payment_mode', 'processed_by').order_by('-created_at')
     search = request.query_params.get('search', '').strip()
     if search:
-        qs = qs.filter(user__username__icontains=search)
+        qs = qs.filter(Q(user__username__icontains=search) | Q(reference_id__icontains=search))
     status_filter = request.query_params.get('status', '').strip()
     if status_filter:
         qs = qs.filter(status=status_filter)
@@ -97,6 +105,14 @@ def withdraw_detail(request, pk):
         if 'remarks' in request.data:
             obj.remarks = request.data.get('remarks') if request.data.get('remarks') is not None else ''
             update_fields.append('remarks')
+        if 'reference_id' in request.data:
+            val = request.data.get('reference_id')
+            ref = '' if val is None else str(val).strip()
+            ok, err_msg = validate_ref_unique(ref, exclude_withdraw_id=obj.pk)
+            if not ok:
+                return Response({'detail': err_msg}, status=status.HTTP_400_BAD_REQUEST)
+            obj.reference_id = ref
+            update_fields.append('reference_id')
         if update_fields:
             obj.save(update_fields=update_fields)
         return Response(WithdrawSerializer(obj, context={'request': request}).data)

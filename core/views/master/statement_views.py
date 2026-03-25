@@ -27,6 +27,7 @@ def _to_statement_row(tx):
     desc = tx.remarks or ""
     if getattr(tx, "processed_by_id", None) and tx.processed_by:
         desc = f"{desc} Processed by: {tx.processed_by.username}" if desc else f"Processed by: {tx.processed_by.username}"
+    ref = (getattr(tx, "reference_id", None) or "").strip()
     return {
         "id": tx.id,
         "username": tx.user.username if tx.user_id else "",
@@ -35,6 +36,7 @@ def _to_statement_row(tx):
         "credit": credit,
         "balance": balance,
         "description": desc,
+        "reference_id": ref,
     }
 
 
@@ -50,6 +52,13 @@ def account_statement_list(request):
         qs = qs.filter(created_at__date__gte=date_from)
     if date_to:
         qs = qs.filter(created_at__date__lte=date_to)
+    search = request.query_params.get("search", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(user__username__icontains=search)
+            | Q(remarks__icontains=search)
+            | Q(reference_id__icontains=search)
+        )
     page = max(1, int(request.query_params.get("page", 1)))
     page_size = min(100, max(1, int(request.query_params.get("page_size", 20))))
     count = qs.count()
@@ -71,6 +80,13 @@ def bonus_statement_list(request):
         qs = qs.filter(created_at__date__gte=date_from)
     if date_to:
         qs = qs.filter(created_at__date__lte=date_to)
+    search = request.query_params.get("search", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(user__username__icontains=search)
+            | Q(remarks__icontains=search)
+            | Q(reference_id__icontains=search)
+        )
     page = max(1, int(request.query_params.get("page", 1)))
     page_size = min(100, max(1, int(request.query_params.get("page_size", 20))))
     count = qs.count()

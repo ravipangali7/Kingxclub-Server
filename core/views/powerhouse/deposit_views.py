@@ -4,9 +4,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
+from django.db.models import Q
 from core.permissions import require_role
 from core.models import Deposit, User, UserRole, PaymentMode
 from core.serializers import DepositSerializer, DepositCreateSerializer, PaymentModeSerializer
+from core.services.reference_id_validation import validate_ref_unique
 
 
 @api_view(['GET'])
@@ -43,7 +45,7 @@ def deposit_list(request):
     qs = Deposit.objects.all().select_related('user', 'payment_mode', 'processed_by').order_by('-created_at')
     search = request.query_params.get('search', '').strip()
     if search:
-        qs = qs.filter(user__username__icontains=search)
+        qs = qs.filter(Q(user__username__icontains=search) | Q(reference_id__icontains=search))
     status_filter = request.query_params.get('status', '').strip()
     if status_filter:
         qs = qs.filter(status=status_filter)
@@ -81,7 +83,14 @@ def deposit_detail(request, pk):
         for key in ('remarks', 'reference_id'):
             if key in request.data:
                 val = request.data.get(key)
-                setattr(obj, key, val if val is not None else '')
+                if key == 'reference_id':
+                    ref = '' if val is None else str(val).strip()
+                    ok, err_msg = validate_ref_unique(ref, exclude_deposit_id=obj.pk)
+                    if not ok:
+                        return Response({'detail': err_msg}, status=status.HTTP_400_BAD_REQUEST)
+                    setattr(obj, key, ref)
+                else:
+                    setattr(obj, key, val if val is not None else '')
                 update_fields.append(key)
         if update_fields:
             obj.save(update_fields=update_fields)
@@ -127,7 +136,11 @@ def deposit_direct(request):
     user_id = request.data.get('user_id')
     amount_raw = request.data.get('amount')
     remarks = request.data.get('remarks', '') or ''
-    reference_id = request.data.get('reference_id', '') or ''
+    reference_id = (request.data.get('reference_id') or '').strip()
+    if reference_id:
+        ok, err_msg = validate_ref_unique(reference_id)
+        if not ok:
+            return Response({'detail': err_msg}, status=status.HTTP_400_BAD_REQUEST)
     if user_id is None:
         return Response({'detail': 'user_id required.'}, status=status.HTTP_400_BAD_REQUEST)
     if amount_raw is None:

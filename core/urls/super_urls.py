@@ -18,6 +18,7 @@ from core.views.super import (
     report_views,
 )
 from core.views.player import transfer_views
+from core.views.shared import reject_reason_suggestions_views
 
 urlpatterns = [
     path('dashboard/', dashboard_views.dashboard),
@@ -77,4 +78,5 @@ urlpatterns = [
     path('change-password/', me_views.change_password),
     path('super-settings/set-default-master/', powerhouse_super_setting_views.set_default_master),
     path('transfer/', transfer_views.transfer),
+    path('reject-reason-suggestions/', reject_reason_suggestions_views.reject_reason_suggestions),
 ]
