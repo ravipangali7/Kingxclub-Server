@@ -1,5 +1,6 @@
 from django.urls import path
 from core.views.powerhouse import (
+    clean_data_views,
     country_views,
     dashboard_views,
     user_views,
@@ -34,6 +35,8 @@ from core.views.player import transfer_views
 from core.views.shared import reject_reason_suggestions_views
 
 urlpatterns = [
+    path('clean-data/', clean_data_views.clean_data_metadata),
+    path('clean-data/execute/', clean_data_views.clean_data_execute),
     path('dashboard/', dashboard_views.dashboard),
     path('supers/', user_views.user_list_supers),
     path('supers/<int:pk>/', user_views.user_detail_supers),
