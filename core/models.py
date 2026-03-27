@@ -230,6 +230,7 @@ class User(AbstractUser):
         decimal_places=2,
         default=default_decimal_zero
     )
+    game_wallet = models.CharField(max_length=10, default='main', blank=True)
     exposure_balance = models.DecimalField(
         max_digits=16,
         decimal_places=2,

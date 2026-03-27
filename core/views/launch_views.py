@@ -21,11 +21,11 @@ def _normalize_launch_base(launch_base: str) -> str:
 
 
 def _wallet_amount_for_launch(user, min_bet):
-    """Send only main_balance when main > 0; only bonus_balance when main is 0 and bonus >= min_bet. Never main + bonus."""
+    """Send main when main >= min_bet, else bonus when bonus >= min_bet. Never main + bonus."""
     main = float(user.main_balance or 0)
     bonus = float(user.bonus_balance or 0)
     min_bet_f = float(min_bet) if min_bet is not None else 0
-    if main > 0:
+    if main >= min_bet_f:
         return main
     if bonus >= min_bet_f:
         return bonus
@@ -53,6 +53,9 @@ def _launch_game_common(request):
     user = request.user
     game = Game.objects.filter(game_uid=game_uid).first()
     min_bet = game.min_bet if game else 0
+    used_bonus = bool(user.can_use_bonus_for_game(min_bet)) and float(user.bonus_balance or 0) >= float(min_bet or 0)
+    user.game_wallet = 'bonus' if used_bonus else 'main'
+    user.save(update_fields=['game_wallet'])
     wallet_amount = _wallet_amount_for_launch(user, min_bet)
     launch_base = (getattr(settings, "game_api_launch_url", None) or "").strip() or settings.game_api_url
     launch_base = _normalize_launch_base(launch_base)
@@ -180,6 +183,9 @@ def launch_game_by_id(request, game_id):
         callback_url = request.build_absolute_uri("/api/callback/").rstrip("/") or None
 
     user = request.user
+    used_bonus = bool(user.can_use_bonus_for_game(game.min_bet)) and float(user.bonus_balance or 0) >= float(game.min_bet or 0)
+    user.game_wallet = 'bonus' if used_bonus else 'main'
+    user.save(update_fields=['game_wallet'])
     wallet_amount = _wallet_amount_for_launch(user, game.min_bet)
     user_id = str(user.pk)
 

@@ -1,5 +1,6 @@
 from django.urls import path
 from core.views.powerhouse import (
+    analytics_views,
     clean_data_views,
     country_views,
     dashboard_views,
@@ -136,4 +137,9 @@ urlpatterns = [
     path('countries/<int:pk>/', country_views.country_detail),
     path('transfer/', transfer_views.transfer),
     path('reject-reason-suggestions/', reject_reason_suggestions_views.reject_reason_suggestions),
+    path('analytics/overview/', analytics_views.overview),
+    path('analytics/games/', analytics_views.game_analytics),
+    path('analytics/finance/', analytics_views.finance_analytics),
+    path('analytics/customers/', analytics_views.customer_analytics),
+    path('analytics/user/<int:user_id>/', analytics_views.user_analytics),
 ]

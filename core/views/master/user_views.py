@@ -96,6 +96,7 @@ def player_update(request, pk):
         return pin_err
     data = request.data.copy()
     data.pop('pin', None)
+    data.pop('parent', None)
     qs = get_players_queryset(request.user)
     obj = qs.filter(pk=pk).first()
     if not obj:

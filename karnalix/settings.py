@@ -139,6 +139,7 @@ DATABASES = {
         'PASSWORD': '7a5a70064acdfd90',
         'HOST': '127.0.0.1',
         'PORT': '3306',
+        'CONN_MAX_AGE': 60,
         'OPTIONS': {
             'charset': 'utf8mb4',
         },

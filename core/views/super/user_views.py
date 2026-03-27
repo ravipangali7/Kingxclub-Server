@@ -216,6 +216,15 @@ def player_update(request, pk):
         return pin_err
     data = request.data.copy()
     data.pop('pin', None)
+    if 'parent' in data:
+        try:
+            parent_id = int(data.get('parent'))
+        except (TypeError, ValueError):
+            return Response({'detail': 'Valid master parent is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        parent = get_masters_queryset(request.user).filter(pk=parent_id).first()
+        if not parent:
+            return Response({'detail': 'Selected master is not in your scope.'}, status=status.HTTP_400_BAD_REQUEST)
+        data['parent'] = parent.id
     qs = get_players_queryset(request.user)
     obj = qs.filter(pk=pk).first()
     if not obj:

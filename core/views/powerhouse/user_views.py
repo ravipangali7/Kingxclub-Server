@@ -112,6 +112,15 @@ def _user_update_response(request, role_type, pk):
     if role_type == 'master':
         data.pop('whatsapp_deposit', None)
         data.pop('whatsapp_withdraw', None)
+    if role_type == 'player' and 'parent' in data:
+        try:
+            parent_id = int(data.get('parent'))
+        except (TypeError, ValueError):
+            return Response({'detail': 'Valid master parent is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        parent = get_masters_queryset(request.user).filter(pk=parent_id).first()
+        if not parent:
+            return Response({'detail': 'Selected master is not in your scope.'}, status=status.HTTP_400_BAD_REQUEST)
+        data['parent'] = parent.id
     ser = UserCreateUpdateSerializer(obj, data=data, partial=(request.method == 'PATCH'))
     ser.is_valid(raise_exception=True)
     ser.save()

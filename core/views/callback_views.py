@@ -89,6 +89,19 @@ def _get_callback_data(request):
     return request.POST.dict() if hasattr(request.POST, "dict") else dict(request.POST)
 
 
+def _is_bonus_game_wallet(user):
+    return (getattr(user, "game_wallet", "main") or "main") == "bonus"
+
+
+def _save_wallet_after(user, wallet_after):
+    if _is_bonus_game_wallet(user):
+        user.bonus_balance = wallet_after
+        user.save(update_fields=["bonus_balance"])
+        return
+    user.main_balance = wallet_after
+    user.save(update_fields=["main_balance"])
+
+
 @csrf_exempt
 @require_http_methods(["GET", "POST", "OPTIONS"])
 def game_callback(request):
@@ -135,10 +148,21 @@ def game_callback(request):
         logger.warning("game_callback: invalid parameters, data keys=%s", list(data.keys()) if data else [])
         return JsonResponse({"error": "Invalid parameters"}, status=400)
 
-    # Only validate token when we have a configured token AND the provider sent one (some providers don't echo token)
-    settings = SuperSetting.get_settings()
-    if settings and getattr(settings, "game_api_token", None) and settings.game_api_token and (token or "").strip():
-        if (token or "").strip() != settings.game_api_token:
+    # Resolve effective token: provider first, SuperSetting as fallback
+    provider_token = ""
+    if game_uid:
+        from_game = Game.objects.filter(game_uid=game_uid).select_related("provider").first()
+        if from_game and from_game.provider:
+            provider_token = (from_game.provider.api_token or "").strip()
+
+    super_settings = SuperSetting.get_settings()
+    effective_token = provider_token or (
+        (getattr(super_settings, "game_api_token", None) or "").strip()
+        if super_settings else ""
+    )
+
+    if effective_token and (token or "").strip():
+        if (token or "").strip() != effective_token:
             logger.warning("game_callback: token mismatch for mobile=%s", mobile)
             return JsonResponse({"error": "Invalid token"}, status=403)
 
@@ -153,6 +177,9 @@ def game_callback(request):
 
     game_uid = game_uid or "unknown"
     game = _get_or_create_game_and_provider(game_uid)
+    is_bonus_wallet = _is_bonus_game_wallet(user)
+    game_log_wallet = GameLogWallet.BONUS_BALANCE if is_bonus_wallet else GameLogWallet.MAIN_BALANCE
+    transaction_wallet = TransactionWallet.BONUS_BALANCE if is_bonus_wallet else TransactionWallet.MAIN_BALANCE
 
     # API-doc aligned: use provider wallet_before/wallet_after as single source of truth
     result_amount = wallet_after - wallet_before
@@ -186,8 +213,7 @@ def game_callback(request):
     )
     if existing and is_round_end_only:
         # Idempotent ack: keep existing GameLog, only sync balance to provider's wallet_after.
-        user.main_balance = wallet_after
-        user.save(update_fields=["main_balance"])
+        _save_wallet_after(user, wallet_after)
         logger.info(
             "game_callback: round-end only (idempotent) user_id=%s game_round=%s wallet_after=%s",
             user.pk, game_round, wallet_after,
@@ -205,15 +231,16 @@ def game_callback(request):
         existing.lose_amount = lose_amount_value
         existing.before_balance = wallet_before
         existing.after_balance = wallet_after
+        existing.wallet = game_log_wallet
         existing.provider_raw_data = data
-        existing.save(update_fields=["bet_amount", "win_amount", "type", "lose_amount", "before_balance", "after_balance", "provider_raw_data", "updated_at"])
+        existing.save(update_fields=["bet_amount", "win_amount", "type", "lose_amount", "before_balance", "after_balance", "wallet", "provider_raw_data", "updated_at"])
         game_log = existing
     else:
         game_log = GameLog.objects.create(
             user=user,
             game=game,
             provider=game.provider,
-            wallet=GameLogWallet.MAIN_BALANCE,
+            wallet=game_log_wallet,
             type=log_type,
             round=game_round,
             bet_amount=bet,
@@ -224,8 +251,7 @@ def game_callback(request):
             provider_raw_data=data,
         )
 
-    user.main_balance = wallet_after
-    user.save(update_fields=["main_balance"])
+    _save_wallet_after(user, wallet_after)
 
     master = getattr(user, "parent", None)
     if master and master.role == UserRole.MASTER:
@@ -238,7 +264,7 @@ def game_callback(request):
         Transaction.objects.create(
             user=user,
             action_type=TransactionActionType.IN if net >= 0 else TransactionActionType.OUT,
-            wallet=TransactionWallet.MAIN_BALANCE,
+            wallet=transaction_wallet,
             transaction_type=TransactionType.PL,
             amount=abs(net),
             status=TransactionStatus.SUCCESS,
