@@ -117,51 +117,52 @@ def approve_deposit(deposit, processed_by, pin=None, use_password=False):
     )
     if user.role == UserRole.PLAYER:
         notify_player_approval(user, processed_by, f'Your deposit of ₹{amount} has been approved.')
-        # First-deposit bonus: if this is the user's first approved deposit and a rule applies, credit bonus
-        approved_count = Deposit.objects.filter(user=user, status='approved').count()
-        if approved_count == 1:
-            rule = get_applicable_deposit_bonus_rule()
-            if rule:
-                if rule.reward_type == RewardType.FLAT:
-                    bonus_amount = rule.reward_amount
-                else:
-                    bonus_amount = (deposit.amount * rule.reward_amount / 100).quantize(Decimal('0.01'))
-                if bonus_amount > 0:
-                    BonusRequest.objects.create(
-                        user=user,
-                        amount=bonus_amount,
-                        bonus_type=BonusType.DEPOSIT,
-                        bonus_rule=rule,
-                        status='approved',
-                        processed_by=processed_by,
-                        processed_at=timezone.now(),
-                        remarks=f'First deposit bonus (Deposit #{deposit.pk})',
-                    )
-                    user.bonus_balance = (user.bonus_balance or Decimal('0')) + bonus_amount
-                    user.save(update_fields=['bonus_balance'])
-                    parent.main_balance = (parent.main_balance or Decimal('0')) - bonus_amount
-                    parent.save(update_fields=['main_balance'])
-                    Transaction.objects.create(
-                        user=parent,
-                        action_type=TransactionActionType.OUT,
-                        wallet=TransactionWallet.MAIN_BALANCE,
-                        transaction_type=TransactionType.BONUS,
-                        amount=bonus_amount,
-                        status=TransactionStatus.SUCCESS,
-                        to_user=user,
-                        remarks=f'First deposit bonus for {user.username}',
-                        processed_by=processed_by,
-                        reference_id=ref,
-                    )
-                    Transaction.objects.create(
-                        user=user,
-                        action_type=TransactionActionType.IN,
-                        wallet=TransactionWallet.BONUS_BALANCE,
-                        transaction_type=TransactionType.BONUS,
-                        amount=bonus_amount,
-                        status=TransactionStatus.SUCCESS,
-                        remarks=f'First deposit bonus (Deposit #{deposit.pk})',
-                        processed_by=processed_by,
-                        reference_id=ref,
-                    )
+        # First-deposit bonus: staff-initiated deposits skip; player-requested first approval still gets bonus
+        if not deposit.suppress_first_deposit_bonus:
+            approved_count = Deposit.objects.filter(user=user, status='approved').count()
+            if approved_count == 1:
+                rule = get_applicable_deposit_bonus_rule()
+                if rule:
+                    if rule.reward_type == RewardType.FLAT:
+                        bonus_amount = rule.reward_amount
+                    else:
+                        bonus_amount = (deposit.amount * rule.reward_amount / 100).quantize(Decimal('0.01'))
+                    if bonus_amount > 0:
+                        BonusRequest.objects.create(
+                            user=user,
+                            amount=bonus_amount,
+                            bonus_type=BonusType.DEPOSIT,
+                            bonus_rule=rule,
+                            status='approved',
+                            processed_by=processed_by,
+                            processed_at=timezone.now(),
+                            remarks=f'First deposit bonus (Deposit #{deposit.pk})',
+                        )
+                        user.bonus_balance = (user.bonus_balance or Decimal('0')) + bonus_amount
+                        user.save(update_fields=['bonus_balance'])
+                        parent.main_balance = (parent.main_balance or Decimal('0')) - bonus_amount
+                        parent.save(update_fields=['main_balance'])
+                        Transaction.objects.create(
+                            user=parent,
+                            action_type=TransactionActionType.OUT,
+                            wallet=TransactionWallet.MAIN_BALANCE,
+                            transaction_type=TransactionType.BONUS,
+                            amount=bonus_amount,
+                            status=TransactionStatus.SUCCESS,
+                            to_user=user,
+                            remarks=f'First deposit bonus for {user.username}',
+                            processed_by=processed_by,
+                            reference_id=ref,
+                        )
+                        Transaction.objects.create(
+                            user=user,
+                            action_type=TransactionActionType.IN,
+                            wallet=TransactionWallet.BONUS_BALANCE,
+                            transaction_type=TransactionType.BONUS,
+                            amount=bonus_amount,
+                            status=TransactionStatus.SUCCESS,
+                            remarks=f'First deposit bonus (Deposit #{deposit.pk})',
+                            processed_by=processed_by,
+                            reference_id=ref,
+                        )
     return True, None

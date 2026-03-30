@@ -107,6 +107,27 @@ def player_update(request, pk):
     return Response(UserDetailSerializer(obj).data)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def player_reset_password(request, pk):
+    err = require_role(request, [UserRole.MASTER])
+    if err:
+        return err
+    pin_err = _verify_master_pin(request)
+    if pin_err:
+        return pin_err
+    new_password = request.data.get('new_password')
+    if not new_password:
+        return Response({'detail': 'new_password required.'}, status=status.HTTP_400_BAD_REQUEST)
+    qs = get_players_queryset(request.user)
+    obj = qs.filter(pk=pk).first()
+    if not obj:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+    obj.set_password(new_password)
+    obj.save(update_fields=['password'])
+    return Response({'detail': 'Password reset successfully.'})
+
+
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def player_delete(request, pk):

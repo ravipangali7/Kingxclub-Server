@@ -356,6 +356,7 @@ class Deposit(models.Model):
     screenshot = models.ImageField(upload_to='deposit_screenshots/', blank=True, null=True)
     remarks = models.TextField(blank=True)
     reference_id = models.CharField(max_length=255, blank=True)
+    suppress_first_deposit_bonus = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

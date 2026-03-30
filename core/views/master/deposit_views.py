@@ -77,7 +77,11 @@ def deposit_create(request):
         return err
     ser = DepositCreateSerializer(data=request.data)
     ser.is_valid(raise_exception=True)
-    dep = Deposit.objects.create(user_id=request.data.get('user_id'), **ser.validated_data)
+    dep = Deposit.objects.create(
+        user_id=request.data.get('user_id'),
+        suppress_first_deposit_bonus=True,
+        **ser.validated_data,
+    )
     return Response(DepositSerializer(dep, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
 
@@ -120,8 +124,13 @@ def deposit_direct(request):
             return Response({'detail': 'Invalid payment mode.'}, status=status.HTTP_400_BAD_REQUEST)
 
     dep = Deposit.objects.create(
-        user_id=user_id, amount=amount, remarks=remarks, reference_id=reference_id, status='pending',
-        payment_mode_id=payment_mode.pk if payment_mode else None
+        user_id=user_id,
+        amount=amount,
+        remarks=remarks,
+        reference_id=reference_id,
+        status='pending',
+        payment_mode_id=payment_mode.pk if payment_mode else None,
+        suppress_first_deposit_bonus=True,
     )
     ok, msg = approve_deposit(dep, request.user)
     if not ok:
